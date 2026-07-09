@@ -125,7 +125,12 @@ async function go(e) {
   return false;
 }
 
-// Boot: setup notice → remembered device → passcode gate
+// Boot: setup notice → remembered device (installed app only) → passcode gate
+//
+// Only auto-skip the gate when running as the INSTALLED home-screen app
+// (navigator.standalone). A plain Safari tab always shows the gate — that
+// way "Add to Home Screen" reliably captures THIS page (with our icon),
+// never the dashboard's script.google.com URL it would otherwise redirect to.
 (function () {
   if (!VAULT) {
     document.getElementById('body').innerHTML =
@@ -134,9 +139,12 @@ async function go(e) {
       '<code>index.html</code> where it says <code>const VAULT = null</code>.</div>';
     return;
   }
-  let saved = null;
-  try { saved = localStorage.getItem(LS_KEY); } catch (_) {}
-  if (saved) mount(saved);
+  const isStandalone = window.navigator.standalone === true;
+  if (isStandalone) {
+    let saved = null;
+    try { saved = localStorage.getItem(LS_KEY); } catch (_) {}
+    if (saved) mount(saved);
+  }
 })();
 </script>
 </body>
