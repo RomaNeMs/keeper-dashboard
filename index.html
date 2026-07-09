@@ -20,9 +20,9 @@
   html, body { margin: 0; padding: 0; height: 100%; background: var(--bg);
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
     color: var(--ink); -webkit-font-smoothing: antialiased; }
-  #app { position: fixed; inset: 0; border: 0; width: 100%; height: 100%; display: none; }
 
   #gate { min-height: 100dvh; display: grid; place-items: center; padding: 24px; box-sizing: border-box; }
+  #gate.opening { opacity: 0.4; pointer-events: none; transition: opacity 200ms; }
   .card {
     width: 340px; max-width: 100%; text-align: center; background: var(--paper);
     border: 1px solid #e0d8ce; border-radius: 16px; padding: 36px 30px 26px;
@@ -64,8 +64,6 @@
 </head>
 <body>
 
-<iframe id="app" allow="clipboard-read; clipboard-write; fullscreen"></iframe>
-
 <div id="gate">
   <form class="card" id="card" onsubmit="return go(event)">
     <div class="mark"><span></span><span></span><span></span><span></span></div>
@@ -103,10 +101,12 @@ async function decryptVault(pass) {
 }
 
 function mount(url) {
-  const f = document.getElementById('app');
-  f.src = url;
-  f.style.display = 'block';
-  document.getElementById('gate').remove();
+  // Google now sends X-Frame-Options/CSP on every response, so the dashboard
+  // can no longer be embedded in an iframe from this origin — navigate to it
+  // top-level instead. iOS keeps this inside the installed home-screen app
+  // (no Safari chrome appears) since it's a same-tab navigation, not a new tab.
+  document.getElementById('gate').classList.add('opening');
+  window.location.replace(url);
 }
 
 async function go(e) {
