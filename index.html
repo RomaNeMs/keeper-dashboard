@@ -125,12 +125,17 @@ async function go(e) {
   return false;
 }
 
-// Boot: setup notice → remembered device (installed app only) → passcode gate
+// Boot: setup notice → remembered device → passcode gate
 //
-// Only auto-skip the gate when running as the INSTALLED home-screen app
-// (navigator.standalone). A plain Safari tab always shows the gate — that
-// way "Add to Home Screen" reliably captures THIS page (with our icon),
-// never the dashboard's script.google.com URL it would otherwise redirect to.
+// navigator.standalone only EXISTS on iOS Safari/WebKit (undefined everywhere
+// else, including desktop Chrome). We only need the "always show the gate"
+// caution on iOS, because that's the one place a page can be silently
+// redirected away before "Add to Home Screen" gets a chance to read this
+// page's icon. On iOS: skip the gate only once already installed
+// (navigator.standalone === true). Everywhere else (Mac, Android, ...):
+// always allowed to auto-skip via the remembered device — there's no
+// icon-capture risk there, and requiring the passcode on every fresh page
+// load (e.g. after fully quitting a desktop browser) was an unwanted bug.
 (function () {
   if (!VAULT) {
     document.getElementById('body').innerHTML =
@@ -139,8 +144,9 @@ async function go(e) {
       '<code>index.html</code> where it says <code>const VAULT = null</code>.</div>';
     return;
   }
-  const isStandalone = window.navigator.standalone === true;
-  if (isStandalone) {
+  const isIOS = typeof window.navigator.standalone !== 'undefined';
+  const canAutoSkip = isIOS ? (window.navigator.standalone === true) : true;
+  if (canAutoSkip) {
     let saved = null;
     try { saved = localStorage.getItem(LS_KEY); } catch (_) {}
     if (saved) mount(saved);
