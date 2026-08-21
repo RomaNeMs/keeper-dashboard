@@ -788,8 +788,26 @@ body {
   .mac-body { flex-direction: column; overflow: hidden; position: relative; }
   .sidebar { display: none !important; }
   .mobile-topbar { display: none !important; }
-  .main { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-  .main-inner { padding: 16px 14px calc(100px + env(safe-area-inset-bottom, 0px)); }
+  .main { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
+  /* Standalone PWA extends under the iOS status bar — pad it out */
+  .main-inner { padding: calc(14px + env(safe-area-inset-top, 0px)) 14px calc(100px + env(safe-area-inset-bottom, 0px)); }
+
+  /* iOS auto-zooms the page when focusing any field under 16px — pin fields
+     at 16px on mobile so the layout never zoom-shifts off screen. */
+  input, textarea, select { font-size: 16px !important; }
+  .line-text { font-size: 16px; }
+  .note-body { font-size: 16px; }
+  .note-title-input { font-size: 26px !important; }
+  .fin-lock input { font-size: 22px !important; }
+  .gate-card input { font-size: 20px !important; }
+  input[type="date"] { min-height: 42px; }
+
+  /* Keyboard-safe modals: anchor near the top so the card (and its buttons)
+     stay visible above the keyboard; scroll inside if needed. */
+  .modal-overlay { align-items: flex-start; padding-top: calc(env(safe-area-inset-top, 0px) + 44px); }
+  .modal-card { max-height: calc(100dvh - 110px); overflow-y: auto; }
+
+  .note-doc { padding: 2px 8px 24px; border-left: none; }
   .mobile-tab-bar {
     display: flex; position: fixed; align-items: center;
     bottom: calc(16px + env(safe-area-inset-bottom, 0px));
@@ -3164,12 +3182,15 @@ function Tasks() {
                 style={{ minHeight: 70, resize: 'vertical', font: 'inherit', fontSize: 14 }}
               />
               {(editBucket === 'today' || editBucket === 'upcoming') && (
-                <input
-                  type="date"
-                  className="input"
-                  value={editingTask.due || ''}
-                  onChange={(e) => setEditingTask(et => ({ ...et, due: e.target.value }))}
-                />
+                <div>
+                  <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>Due date</div>
+                  <input
+                    type="date"
+                    className="input"
+                    value={editingTask.due || ''}
+                    onChange={(e) => setEditingTask(et => ({ ...et, due: e.target.value }))}
+                  />
+                </div>
               )}
             </div>
             <div className="modal-actions">
@@ -3348,7 +3369,12 @@ function TaskCol({ color, title, sub, tasks, bucketId, showDate, onAdd, onToggle
                 style={{ minHeight: 70, resize: 'vertical', font: 'inherit', fontSize: 14 }}
               />
               {showDate && (
-                <input type="date" className="input" value={draftDue} onChange={(e) => setDraftDue(e.target.value)} />
+                <div>
+                  <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>
+                    Due date {bucketId === 'today' ? '(empty = today)' : '(empty = in 3 days)'}
+                  </div>
+                  <input type="date" className="input" value={draftDue} onChange={(e) => setDraftDue(e.target.value)} />
+                </div>
               )}
             </div>
             <div className="modal-actions">
