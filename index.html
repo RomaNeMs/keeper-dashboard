@@ -92,6 +92,7 @@ html, body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  -webkit-text-size-adjust: 100%;
   min-height: 100vh;
 }
 
@@ -795,8 +796,19 @@ body {
   /* iOS auto-zooms the page when focusing any field under 16px — pin fields
      at 16px on mobile so the layout never zoom-shifts off screen. */
   input, textarea, select { font-size: 16px !important; }
-  .line-text { font-size: 16px; }
+  .line-text { font-size: 16px !important; }
   .note-body { font-size: 16px; }
+  .note-line[data-type="sh"] { font-size: 16px; }
+
+  /* Standalone iOS ignores user-scalable=no — a stray double-tap zooms the
+     page and content "spills" off-screen. touch-action:manipulation disables
+     double-tap zoom; the class-level pan-y/none rules for swipe rows and
+     drag handles still win over this universal rule. */
+  * { touch-action: manipulation; }
+
+  /* Room for the keyboard when the pan-guard scrolls a focused field into
+     view inside .main (see the keyboard-guard script in the page shell). */
+  .main { scroll-padding: 120px 0 340px 0; }
   .note-title-input { font-size: 26px !important; }
   .fin-lock input { font-size: 22px !important; }
   .gate-card input { font-size: 20px !important; }
@@ -1187,6 +1199,39 @@ const __GATE_LS = 'studio.exec.url';
   let saved = null;
   try { saved = localStorage.getItem(__GATE_LS); } catch (_) {}
   if (saved) document.getElementById('gate').remove();
+})();
+
+// ── iOS standalone keyboard guard ──────────────────────────────────────────
+// When the keyboard opens, standalone iOS force-pans the whole app window
+// (window scroll) even though the layout is overflow:hidden — pushing modal
+// tops and headers off-screen and leaving the page shifted after the
+// keyboard closes. Counter it: snap the window pan back to origin whenever
+// the visual viewport changes, and instead reveal the focused field by
+// scrolling the app's own inner scroller (.main, honoring scroll-padding).
+(function () {
+  if (!('visualViewport' in window)) return;
+  let raf = null;
+  function snap() {
+    if (raf) return;
+    raf = requestAnimationFrame(function () {
+      raf = null;
+      if (window.scrollX !== 0 || window.scrollY !== 0) window.scrollTo(0, 0);
+      const d = document.documentElement;
+      if (d.scrollLeft) d.scrollLeft = 0;
+      if (d.scrollTop) d.scrollTop = 0;
+      const el = document.activeElement;
+      if (el && el.closest && el.closest('.main') &&
+          (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) {
+        const vh = window.visualViewport.height;
+        const r = el.getBoundingClientRect();
+        if (r.bottom > vh - 40 || r.top < 60) el.scrollIntoView({ block: 'center' });
+      }
+    });
+  }
+  window.visualViewport.addEventListener('resize', snap);
+  window.visualViewport.addEventListener('scroll', snap);
+  document.addEventListener('focusin', function () { setTimeout(snap, 350); });
+  document.addEventListener('focusout', function () { setTimeout(snap, 100); });
 })();
 
 function __gateB64d(s) { return Uint8Array.from(atob(s), c => c.charCodeAt(0)); }
