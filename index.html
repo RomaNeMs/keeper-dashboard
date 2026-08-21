@@ -1151,6 +1151,21 @@ const __GATE_VAULT = { salt: "ncCgQeuDF2XwoB7bdDtcKw==", iv: "03CALX46wkiW2q/p",
 const __GATE_LS = 'studio.exec.url';
 
 (function () {
+  // Old bookmarks to the retired script.google.com URL land here via a
+  // redirect that Google runs INSIDE its own wrapper iframe — leaving the
+  // app framed under Google's banner at desktop width. Script-driven
+  // top-navigation is blocked by Google's sandbox, but a user-tapped
+  // target="_top" link is allowed — so offer exactly that and stop.
+  if (window.top !== window.self) {
+    try { window.top.location.href = 'https://romanems.github.io/keeper-dashboard/'; } catch (_) {}
+    document.getElementById('gate').innerHTML =
+      '<a href="https://romanems.github.io/keeper-dashboard/" target="_top" class="gate-card" ' +
+      'style="display:block;text-decoration:none;color:inherit;font-size:16px;font-weight:600;">' +
+      'Keeper has moved to a new address.<br><br>' +
+      '<span style="color:#0066CC">Tap here to open it</span><br><br>' +
+      '<span style="font-size:12px;font-weight:400;color:#8a7060">Then delete the old home-screen icon and add this page instead.</span></a>';
+    return;
+  }
   let saved = null;
   try { saved = localStorage.getItem(__GATE_LS); } catch (_) {}
   if (saved) document.getElementById('gate').remove();
