@@ -54,6 +54,12 @@ function Tasks() {
     }));
   }
 
+  // Per-column collapse, synced like tripsCollapsed
+  const taskCollapsed = state.taskCollapsed || {};
+  function toggleColCollapse(id) {
+    setState(s => ({ ...s, taskCollapsed: { ...(s.taskCollapsed || {}), [id]: !(s.taskCollapsed || {})[id] } }));
+  }
+
   const editBucket = editingTask ? dueBucket(editingTask.due) : null;
 
   return (
@@ -67,16 +73,19 @@ function Tasks() {
       <div className="tasks-grid">
         <TaskCol color="coral" title="Today" sub="due now"
           tasks={bucketed.today} bucketId="today" showDate
+          collapsed={!!taskCollapsed.today} onToggleCollapse={() => toggleColCollapse('today')}
           onAdd={add} onToggle={toggle} onRemove={remove}
           onEdit={(t) => setEditingTask({ id: t.id, text: t.text, due: t.due })}
           onMove={moveTask} onReorder={reorderBucket} />
         <TaskCol color="sky" title="Upcoming" sub="this week"
           tasks={bucketed.upcoming} bucketId="upcoming" showDate
+          collapsed={!!taskCollapsed.upcoming} onToggleCollapse={() => toggleColCollapse('upcoming')}
           onAdd={add} onToggle={toggle} onRemove={remove}
           onEdit={(t) => setEditingTask({ id: t.id, text: t.text, due: t.due })}
           onMove={moveTask} onReorder={reorderBucket} />
         <TaskCol color="butter" title="Someday" sub="no rush"
           tasks={bucketed.someday} bucketId="someday" showDate={false}
+          collapsed={!!taskCollapsed.someday} onToggleCollapse={() => toggleColCollapse('someday')}
           onAdd={add} onToggle={toggle} onRemove={remove}
           onEdit={(t) => setEditingTask({ id: t.id, text: t.text, due: t.due })}
           onMove={moveTask} onReorder={reorderBucket} />
@@ -206,7 +215,7 @@ function TaskCard({ task, handleProps, isDragging, isOver, overBelow, onToggle, 
   );
 }
 
-function TaskCol({ color, title, sub, tasks, bucketId, showDate, onAdd, onToggle, onRemove, onEdit, onMove, onReorder }) {
+function TaskCol({ color, title, sub, tasks, bucketId, showDate, onAdd, onToggle, onRemove, onEdit, onMove, onReorder, collapsed, onToggleCollapse }) {
   const [hover, setHover] = React.useState(false);
   const [showAddModal, setShowAddModal] = React.useState(false);
   const [draftText, setDraftText] = React.useState('');
@@ -226,7 +235,7 @@ function TaskCol({ color, title, sub, tasks, bucketId, showDate, onAdd, onToggle
 
   return (
     <div
-      className="task-col"
+      className={`task-col ${collapsed ? 'collapsed' : ''}`}
       style={{ background: CAT_COLOR_BG[color], outline: hover ? '2px dashed rgba(0,0,0,0.3)' : 'none' }}
       onDragOver={(e) => { e.preventDefault(); setHover(true); }}
       onDragLeave={() => setHover(false)}
@@ -237,10 +246,23 @@ function TaskCol({ color, title, sub, tasks, bucketId, showDate, onAdd, onToggle
       }}
     >
       <div className="task-col-head">
-        <div className="task-col-title">{title}</div>
-        <div className="task-col-sub">{tasks.filter(t => !t.done).length} · {sub}</div>
+        <div className="task-col-title" onClick={onToggleCollapse} style={{ cursor: 'pointer' }}>{title}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div className="task-col-sub">{tasks.filter(t => !t.done).length} · {sub}</div>
+          <button className="collapse-btn" onClick={onToggleCollapse} title={collapsed ? 'Expand' : 'Collapse'}>
+            {collapsed ? '▼' : '▲'}
+          </button>
+        </div>
       </div>
 
+      {/* Add sits at the top so long lists never bury it */}
+      {!collapsed && (
+        <div className="add-col-btn-row">
+          <button className="add-col-btn" onClick={() => setShowAddModal(true)}>+ Add task</button>
+        </div>
+      )}
+
+      {!collapsed && (
       <div className="task-col-body">
         {tasks.length === 0 && <div className="empty" style={{ opacity: 0.5 }}>—</div>}
         {tasks.map(t => {
@@ -263,10 +285,7 @@ function TaskCol({ color, title, sub, tasks, bucketId, showDate, onAdd, onToggle
           );
         })}
       </div>
-
-      <div className="add-col-btn-row">
-        <button className="add-col-btn" onClick={() => setShowAddModal(true)}>+ Add task</button>
-      </div>
+      )}
 
       {showAddModal && (
         <div className="modal-overlay" onClick={() => setShowAddModal(false)}>

@@ -26,6 +26,11 @@ function Shopping() {
 
   const items = state.shopping.items;
   const cats  = state.shopping.cats;
+  // Per-category collapse, synced like tripsCollapsed
+  const shopCollapsed = state.shopCollapsed || {};
+  function toggleCatCollapse(catId) {
+    setState(s => ({ ...s, shopCollapsed: { ...(s.shopCollapsed || {}), [catId]: !(s.shopCollapsed || {})[catId] } }));
+  }
 
   function addItem(catId, name) {
     const trimmed = name.trim();
@@ -172,6 +177,8 @@ function Shopping() {
               onOpenSearch={openSearch}
               onAddItem={(name) => addItem(cat.id, name)}
               onClearChecked={() => clearChecked(cat.id)}
+              collapsed={!!shopCollapsed[cat.id]}
+              onToggleCollapse={() => toggleCatCollapse(cat.id)}
             />
           );
         })}
@@ -192,12 +199,14 @@ function CatBlock({
   editingCat, onStartEditCat, onCommitCatName, onCancelEditCat,
   onReorder, editingQty, editingName, onToggle, onRemove, onStartEditName, onCommitName,
   onCancelEditName, onStartEditQty, onCommitQty, onOpenSearch, onAddItem, onClearChecked,
+  collapsed, onToggleCollapse,
 }) {
   const checkedCount = catItems.length - open;
   const { getHandleProps, dragState } = useReorder(catItems, onReorder);
 
   const blockCls = [
     'cat-block',
+    collapsed ? 'collapsed' : '',
     isDragging ? 'reorder-dragging' : '',
     isOver ? `reorder-over ${overBelow ? 'reorder-over-below' : ''}` : '',
   ].filter(Boolean).join(' ');
@@ -243,11 +252,21 @@ function CatBlock({
               Clear<span className="cat-clear-word"> checked</span> · {checkedCount}
             </button>
           )}
-          <div className="cat-count">{open}/{catItems.length}</div>
+          <div className="cat-count" onClick={onToggleCollapse} style={{ cursor: 'pointer' }}>{open}/{catItems.length}</div>
+          <button className="collapse-btn" onClick={onToggleCollapse} title={collapsed ? 'Expand' : 'Collapse'}>
+            {collapsed ? '▼' : '▲'}
+          </button>
         </div>
       </div>
 
-      {catItems.map(it => {
+      {/* Add sits at the top so long lists never bury it */}
+      {!collapsed && (
+        <div className="add-col-btn-row">
+          <button className="add-col-btn" onClick={() => setShowAddModal(true)}>+ Add item</button>
+        </div>
+      )}
+
+      {!collapsed && catItems.map(it => {
         const overBelow = dragState.overId === it.id &&
           catItems.findIndex(x => x.id === it.id) > catItems.findIndex(x => x.id === dragState.draggingId);
         return (
@@ -271,10 +290,6 @@ function CatBlock({
           />
         );
       })}
-
-      <div className="add-col-btn-row">
-        <button className="add-col-btn" onClick={() => setShowAddModal(true)}>+ Add item</button>
-      </div>
 
       {showAddModal && (
         <div className="modal-overlay" onClick={() => setShowAddModal(false)}>

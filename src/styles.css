@@ -438,6 +438,20 @@ body {
 .add-col-btn:hover { background: var(--grad-accent-hover); }
 .add-col-btn:active { transform: scale(0.97); }
 
+/* ── Collapsible bubbles (shopping categories, task columns) ── */
+.collapse-btn {
+  width: 24px; height: 24px; border: none; background: transparent; border-radius: 6px;
+  color: var(--muted); font-size: 11px; cursor: pointer; flex-shrink: 0;
+}
+.collapse-btn:hover { background: var(--bg); }
+/* Add buttons live at the top of each bubble, right under the header */
+.cat-block .add-col-btn-row { padding: 0 0 10px; }
+.cat-block.collapsed { padding-bottom: 12px; }
+.cat-block.collapsed .cat-head { margin-bottom: 0; }
+.task-col .add-col-btn-row { padding: 0 14px 10px; }
+.task-col.collapsed { min-height: 0; }
+.task-col.collapsed .task-col-head { margin-bottom: 0; padding-bottom: 14px; }
+
 /* Pill buttons — Pin/Unpin, Show/Hide (shared by app.jsx + home.jsx) */
 .pill-btn {
   padding: 4px 12px; border-radius: 999px; border: none; cursor: pointer;
