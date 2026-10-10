@@ -272,21 +272,27 @@ body {
   box-shadow: 0 0 0 3px rgba(0,102,204,0.12); min-width: 0; flex: 1;
 }
 .cat-head-right { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; }
+/* Header pills share the blue 3D language of the add / new-category buttons */
 .cat-count {
   font-family: var(--font-mono);
-  font-size: 11px; padding: 2px 8px; flex-shrink: 0;
-  background: var(--bg); border: 1px solid var(--line); border-radius: 999px; color: var(--muted);
-  box-shadow: var(--bevel-soft);
+  font-size: 11px; font-weight: 600; padding: 4px 9px; flex-shrink: 0; cursor: pointer;
+  background: var(--grad-accent); border: none; border-radius: 8px; color: #fff;
+  box-shadow: var(--bevel-accent);
 }
 .cat-clear-btn {
   font-family: var(--font-mono); font-size: 10.5px; font-weight: 600;
-  padding: 3px 10px; flex-shrink: 0; white-space: nowrap; cursor: pointer;
-  background: var(--paper); border: 1px solid var(--line-2); border-radius: 999px;
-  color: var(--red); box-shadow: var(--bevel-soft);
-  transition: transform 100ms, background 100ms;
+  padding: 4px 10px; flex-shrink: 0; white-space: nowrap; cursor: pointer;
+  background: var(--grad-accent); border: none; border-radius: 8px;
+  color: #fff; box-shadow: var(--bevel-accent);
+  transition: transform 100ms, background 120ms;
 }
-.cat-clear-btn:hover { background: var(--red-light); }
+.cat-clear-btn:hover { background: var(--grad-accent-hover); }
 .cat-clear-btn:active { transform: scale(0.95); }
+/* In-header add button (shopping categories, task columns) */
+.add-col-btn.head-add { padding: 4px 10px; font-size: 11.5px; border-radius: 8px; flex-shrink: 0; }
+@media (max-width: 680px) {
+  .head-add-word { display: none; }
+}
 
 /* ── Shopping / Task item rows ── */
 .item-row {
@@ -407,9 +413,9 @@ body {
 }
 .task-col-title { font-size: 15px; font-weight: 700; }
 .task-col-sub {
-  font-family: var(--font-mono); font-size: 11px; padding: 2px 8px;
-  background: var(--bg); border: 1px solid var(--line); border-radius: 999px; color: var(--muted);
-  box-shadow: var(--bevel-soft);
+  font-family: var(--font-mono); font-size: 11px; font-weight: 600; padding: 4px 9px;
+  background: var(--grad-accent); border: none; border-radius: 8px; color: #fff;
+  box-shadow: var(--bevel-accent); white-space: nowrap;
 }
 
 .task-card { /* uses .item-row + .item-swipe-body shared classes */ }
@@ -444,11 +450,8 @@ body {
   color: var(--muted); font-size: 11px; cursor: pointer; flex-shrink: 0;
 }
 .collapse-btn:hover { background: var(--bg); }
-/* Add buttons live at the top of each bubble, right under the header */
-.cat-block .add-col-btn-row { padding: 0 0 10px; }
 .cat-block.collapsed { padding-bottom: 12px; }
 .cat-block.collapsed .cat-head { margin-bottom: 0; }
-.task-col .add-col-btn-row { padding: 0 14px 10px; }
 .task-col.collapsed { min-height: 0; }
 .task-col.collapsed .task-col-head { margin-bottom: 0; padding-bottom: 14px; }
 

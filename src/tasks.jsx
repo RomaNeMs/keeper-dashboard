@@ -246,7 +246,12 @@ function TaskCol({ color, title, sub, tasks, bucketId, showDate, onAdd, onToggle
       }}
     >
       <div className="task-col-head">
-        <div className="task-col-title" onClick={onToggleCollapse} style={{ cursor: 'pointer' }}>{title}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="task-col-title" onClick={onToggleCollapse} style={{ cursor: 'pointer' }}>{title}</div>
+          <button className="add-col-btn head-add" onClick={() => setShowAddModal(true)} title="Add task">
+            + Add<span className="head-add-word"> task</span>
+          </button>
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <div className="task-col-sub">{tasks.filter(t => !t.done).length} · {sub}</div>
           <button className="collapse-btn" onClick={onToggleCollapse} title={collapsed ? 'Expand' : 'Collapse'}>
@@ -254,13 +259,6 @@ function TaskCol({ color, title, sub, tasks, bucketId, showDate, onAdd, onToggle
           </button>
         </div>
       </div>
-
-      {/* Add sits at the top so long lists never bury it */}
-      {!collapsed && (
-        <div className="add-col-btn-row">
-          <button className="add-col-btn" onClick={() => setShowAddModal(true)}>+ Add task</button>
-        </div>
-      )}
 
       {!collapsed && (
       <div className="task-col-body">

@@ -246,6 +246,9 @@ function CatBlock({
             </svg>
           </div>
         )}
+        <button className="add-col-btn head-add" onClick={() => setShowAddModal(true)} title="Add item">
+          + Add<span className="head-add-word"> item</span>
+        </button>
         <div className="cat-head-right">
           {checkedCount > 0 && (
             <button className="cat-clear-btn" onClick={onClearChecked} title="Remove all checked items">
@@ -258,13 +261,6 @@ function CatBlock({
           </button>
         </div>
       </div>
-
-      {/* Add sits at the top so long lists never bury it */}
-      {!collapsed && (
-        <div className="add-col-btn-row">
-          <button className="add-col-btn" onClick={() => setShowAddModal(true)}>+ Add item</button>
-        </div>
-      )}
 
       {!collapsed && catItems.map(it => {
         const overBelow = dragState.overId === it.id &&
