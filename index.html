@@ -5109,18 +5109,33 @@ function Finance() {
 
         {/* RSU / Stock comp — 2-col */}
         {FIN.rsu && FIN.rsu.length > 0 && (
-          <FinSection title="Stock-based comp" sub="RSUs / equity grants">
+          <FinSection title="Stock-based comp" sub="RSUs / equity grants · not in net worth">
             <div className="fin-table">
-              {FIN.rsu.map(r => (
-                <div key={r.id} className="fin-row-2col">
-                  <div className="fin-row-main">
-                    <div className="fin-row-name">{r.name}</div>
-                    {r.note && <div className="fin-row-note">{r.note}</div>}
-                    {!r.note && <div className="fin-row-note">{r.kind === 'private' ? 'Private · unvalued' : 'Public · vested'}</div>}
+              {FIN.rsu.map(r => {
+                // Sheet column A reads like "Coupa - Vesting start date …": the part
+                // before " - " is the company, the rest is the grant detail.
+                // Column C is the grant's USD value when it's a bare number.
+                const [company, ...rest] = String(r.name || '').split(' - ');
+                const detail = rest.join(' - ').trim();
+                const usdValue = /^\d+(\.\d+)?$/.test(String(r.note || '').trim()) ? Number(r.note) : null;
+                return (
+                  <div key={r.id} className="fin-row-2col">
+                    <div className="fin-row-main">
+                      <div className="fin-row-name">{company.trim()}</div>
+                      {detail && <div className="fin-row-note">{detail}</div>}
+                      {!detail && usdValue == null && r.note && <div className="fin-row-note">{r.note}</div>}
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div className="fin-row-amt" data-hide={hide}>{Number(r.shares).toLocaleString()} units</div>
+                      {usdValue != null && (
+                        <div className="fin-row-usd" data-hide={hide}>
+                          {fmtUSD(usdValue)} · ≈{fmtILS(usdValue * rate)}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="fin-row-amt" data-hide={hide}>{Number(r.shares).toLocaleString()} sh</div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </FinSection>
         )}
