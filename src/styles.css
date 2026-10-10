@@ -62,6 +62,9 @@
   --bevel-red:    inset 0 1px 0 rgba(255,255,255,0.30), 0 2px 6px rgba(224,53,42,0.30);
   --bevel-chip:   inset 0 1px 0 rgba(255,255,255,0.30), 0 1px 3px rgba(44,26,14,0.16);
   --bevel-soft:   inset 0 1px 0 rgba(255,255,255,0.55), 0 1px 2px rgba(44,26,14,0.07);
+  --grad-green:       linear-gradient(180deg, #3fcf6a, #27a84f);
+  --grad-red-hover:   linear-gradient(180deg, #f0493d, #c92a20);
+  --bevel-green:  inset 0 1px 0 rgba(255,255,255,0.30), 0 2px 6px rgba(39,168,79,0.32);
 }
 
 * { box-sizing: border-box; }
@@ -276,17 +279,17 @@ body {
 .cat-count {
   font-family: var(--font-mono);
   font-size: 11px; font-weight: 600; padding: 4px 9px; flex-shrink: 0; cursor: pointer;
-  background: var(--grad-accent); border: none; border-radius: 8px; color: #fff;
-  box-shadow: var(--bevel-accent);
+  background: var(--grad-green); border: none; border-radius: 8px; color: #fff;
+  box-shadow: var(--bevel-green);
 }
 .cat-clear-btn {
   font-family: var(--font-mono); font-size: 10.5px; font-weight: 600;
   padding: 4px 10px; flex-shrink: 0; white-space: nowrap; cursor: pointer;
-  background: var(--grad-accent); border: none; border-radius: 8px;
-  color: #fff; box-shadow: var(--bevel-accent);
+  background: var(--grad-red); border: none; border-radius: 8px;
+  color: #fff; box-shadow: var(--bevel-red);
   transition: transform 100ms, background 120ms;
 }
-.cat-clear-btn:hover { background: var(--grad-accent-hover); }
+.cat-clear-btn:hover { background: var(--grad-red-hover); }
 .cat-clear-btn:active { transform: scale(0.95); }
 /* In-header add button (shopping categories, task columns) */
 .add-col-btn.head-add { padding: 4px 10px; font-size: 11.5px; border-radius: 8px; flex-shrink: 0; }
@@ -414,8 +417,8 @@ body {
 .task-col-title { font-size: 15px; font-weight: 700; }
 .task-col-sub {
   font-family: var(--font-mono); font-size: 11px; font-weight: 600; padding: 4px 9px;
-  background: var(--grad-accent); border: none; border-radius: 8px; color: #fff;
-  box-shadow: var(--bevel-accent); white-space: nowrap;
+  background: var(--grad-green); border: none; border-radius: 8px; color: #fff;
+  box-shadow: var(--bevel-green); white-space: nowrap;
 }
 
 .task-card { /* uses .item-row + .item-swipe-body shared classes */ }

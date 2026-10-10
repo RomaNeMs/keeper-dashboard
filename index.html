@@ -80,6 +80,9 @@
   --bevel-red:    inset 0 1px 0 rgba(255,255,255,0.30), 0 2px 6px rgba(224,53,42,0.30);
   --bevel-chip:   inset 0 1px 0 rgba(255,255,255,0.30), 0 1px 3px rgba(44,26,14,0.16);
   --bevel-soft:   inset 0 1px 0 rgba(255,255,255,0.55), 0 1px 2px rgba(44,26,14,0.07);
+  --grad-green:       linear-gradient(180deg, #3fcf6a, #27a84f);
+  --grad-red-hover:   linear-gradient(180deg, #f0493d, #c92a20);
+  --bevel-green:  inset 0 1px 0 rgba(255,255,255,0.30), 0 2px 6px rgba(39,168,79,0.32);
 }
 
 * { box-sizing: border-box; }
@@ -294,17 +297,17 @@ body {
 .cat-count {
   font-family: var(--font-mono);
   font-size: 11px; font-weight: 600; padding: 4px 9px; flex-shrink: 0; cursor: pointer;
-  background: var(--grad-accent); border: none; border-radius: 8px; color: #fff;
-  box-shadow: var(--bevel-accent);
+  background: var(--grad-green); border: none; border-radius: 8px; color: #fff;
+  box-shadow: var(--bevel-green);
 }
 .cat-clear-btn {
   font-family: var(--font-mono); font-size: 10.5px; font-weight: 600;
   padding: 4px 10px; flex-shrink: 0; white-space: nowrap; cursor: pointer;
-  background: var(--grad-accent); border: none; border-radius: 8px;
-  color: #fff; box-shadow: var(--bevel-accent);
+  background: var(--grad-red); border: none; border-radius: 8px;
+  color: #fff; box-shadow: var(--bevel-red);
   transition: transform 100ms, background 120ms;
 }
-.cat-clear-btn:hover { background: var(--grad-accent-hover); }
+.cat-clear-btn:hover { background: var(--grad-red-hover); }
 .cat-clear-btn:active { transform: scale(0.95); }
 /* In-header add button (shopping categories, task columns) */
 .add-col-btn.head-add { padding: 4px 10px; font-size: 11.5px; border-radius: 8px; flex-shrink: 0; }
@@ -432,8 +435,8 @@ body {
 .task-col-title { font-size: 15px; font-weight: 700; }
 .task-col-sub {
   font-family: var(--font-mono); font-size: 11px; font-weight: 600; padding: 4px 9px;
-  background: var(--grad-accent); border: none; border-radius: 8px; color: #fff;
-  box-shadow: var(--bevel-accent); white-space: nowrap;
+  background: var(--grad-green); border: none; border-radius: 8px; color: #fff;
+  box-shadow: var(--bevel-green); white-space: nowrap;
 }
 
 .task-card { /* uses .item-row + .item-swipe-body shared classes */ }
@@ -2718,13 +2721,32 @@ function Shopping() {
       const idx = s.shopping.items.findIndex(i => i.id === id);
       if (idx === -1) return s;
       const item = s.shopping.items[idx];
-      const updated = { ...item, done: !item.done };
       const items = [...s.shopping.items];
       items.splice(idx, 1);
-      // Checking an item sinks it to the end (last within its category, same
-      // reasoning as addItem above). Unchecking leaves it where it was.
-      if (updated.done) items.push(updated);
-      else items.splice(idx, 0, updated);
+      if (!item.done) {
+        // Checking: remember the slot within its category, then sink to the end
+        // (last within the category — row order is just this array filtered by cat).
+        const prevPos = s.shopping.items.slice(0, idx).filter(i => i.cat === item.cat).length;
+        items.push({ ...item, done: true, prevPos });
+      } else {
+        // Unchecking: put it back in the slot it came from
+        const { prevPos, ...rest } = item;
+        const restored = { ...rest, done: false };
+        let insertAt = idx;
+        if (prevPos != null) {
+          let seen = 0, found = false;
+          for (let k = 0; k < items.length; k++) {
+            if (items[k].cat !== item.cat) continue;
+            if (seen === prevPos) { insertAt = k; found = true; break; }
+            seen++;
+          }
+          if (!found) {
+            const lastSame = items.map(i => i.cat).lastIndexOf(item.cat);
+            insertAt = lastSame === -1 ? items.length : lastSame + 1;
+          }
+        }
+        items.splice(insertAt, 0, restored);
+      }
       return { ...s, shopping: { ...s.shopping, items } };
     });
   }
@@ -2916,10 +2938,10 @@ function CatBlock({
             </svg>
           </div>
         )}
-        <button className="add-col-btn head-add" onClick={() => setShowAddModal(true)} title="Add item">
-          + Add<span className="head-add-word"> item</span>
-        </button>
         <div className="cat-head-right">
+          <button className="add-col-btn head-add" onClick={() => setShowAddModal(true)} title="Add item">
+            + Add<span className="head-add-word"> item</span>
+          </button>
           {checkedCount > 0 && (
             <button className="cat-clear-btn" onClick={onClearChecked} title="Remove all checked items">
               Clear<span className="cat-clear-word"> checked</span> · {checkedCount}
@@ -3405,13 +3427,11 @@ function TaskCol({ color, title, sub, tasks, bucketId, showDate, onAdd, onToggle
       }}
     >
       <div className="task-col-head">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div className="task-col-title" onClick={onToggleCollapse} style={{ cursor: 'pointer' }}>{title}</div>
+        <div className="task-col-title" onClick={onToggleCollapse} style={{ cursor: 'pointer' }}>{title}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <button className="add-col-btn head-add" onClick={() => setShowAddModal(true)} title="Add task">
             + Add<span className="head-add-word"> task</span>
           </button>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <div className="task-col-sub">{tasks.filter(t => !t.done).length} · {sub}</div>
           <button className="collapse-btn" onClick={onToggleCollapse} title={collapsed ? 'Expand' : 'Collapse'}>
             {collapsed ? '▼' : '▲'}

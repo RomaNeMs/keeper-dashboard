@@ -48,13 +48,32 @@ function Shopping() {
       const idx = s.shopping.items.findIndex(i => i.id === id);
       if (idx === -1) return s;
       const item = s.shopping.items[idx];
-      const updated = { ...item, done: !item.done };
       const items = [...s.shopping.items];
       items.splice(idx, 1);
-      // Checking an item sinks it to the end (last within its category, same
-      // reasoning as addItem above). Unchecking leaves it where it was.
-      if (updated.done) items.push(updated);
-      else items.splice(idx, 0, updated);
+      if (!item.done) {
+        // Checking: remember the slot within its category, then sink to the end
+        // (last within the category — row order is just this array filtered by cat).
+        const prevPos = s.shopping.items.slice(0, idx).filter(i => i.cat === item.cat).length;
+        items.push({ ...item, done: true, prevPos });
+      } else {
+        // Unchecking: put it back in the slot it came from
+        const { prevPos, ...rest } = item;
+        const restored = { ...rest, done: false };
+        let insertAt = idx;
+        if (prevPos != null) {
+          let seen = 0, found = false;
+          for (let k = 0; k < items.length; k++) {
+            if (items[k].cat !== item.cat) continue;
+            if (seen === prevPos) { insertAt = k; found = true; break; }
+            seen++;
+          }
+          if (!found) {
+            const lastSame = items.map(i => i.cat).lastIndexOf(item.cat);
+            insertAt = lastSame === -1 ? items.length : lastSame + 1;
+          }
+        }
+        items.splice(insertAt, 0, restored);
+      }
       return { ...s, shopping: { ...s.shopping, items } };
     });
   }
@@ -246,10 +265,10 @@ function CatBlock({
             </svg>
           </div>
         )}
-        <button className="add-col-btn head-add" onClick={() => setShowAddModal(true)} title="Add item">
-          + Add<span className="head-add-word"> item</span>
-        </button>
         <div className="cat-head-right">
+          <button className="add-col-btn head-add" onClick={() => setShowAddModal(true)} title="Add item">
+            + Add<span className="head-add-word"> item</span>
+          </button>
           {checkedCount > 0 && (
             <button className="cat-clear-btn" onClick={onClearChecked} title="Remove all checked items">
               Clear<span className="cat-clear-word"> checked</span> · {checkedCount}
