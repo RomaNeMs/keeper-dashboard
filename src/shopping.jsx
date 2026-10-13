@@ -310,10 +310,14 @@ function CatBlock({
           }
         }}
       >
-      <button className="cat-head-del" onClick={() => { setHeadX(0); onDelete(); }}>Delete</button>
+      {/* Delete slides in over the right-hand controls; the name stays visible */}
+      <button
+        className="cat-head-del"
+        style={{ transform: `translateX(${-HEAD_SWIPE_OPEN + headX}px)` }}
+        onClick={() => { setHeadX(0); onDelete(); }}
+      >Delete</button>
       <div
         className="cat-head"
-        style={{ transform: `translateX(${headX}px)`, background: CAT_COLOR_BG[cat.color] }}
         onTouchStart={onHeadTouchStart}
         onTouchMove={onHeadTouchMove}
         onTouchEnd={onHeadTouchEnd}
