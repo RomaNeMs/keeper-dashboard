@@ -319,7 +319,13 @@ body {
 /* In-header add button (shopping categories, task columns) */
 .add-col-btn.head-add { padding: 4px 10px; font-size: 11.5px; border-radius: 8px; flex-shrink: 0; }
 @media (max-width: 680px) {
+  /* Phone headers: icon-only "+" and tighter spacing so the name keeps room */
   .head-add-word { display: none; }
+  .add-col-btn.head-add { width: 30px; height: 26px; padding: 0; justify-content: center; font-size: 16px; }
+  .cat-head { gap: 6px; }
+  .cat-head-right { gap: 5px; }
+  .cat-head .collapse-btn { width: 20px; }
+  .cat-del-btn { width: 20px; }
 }
 
 /* ── Shopping / Task item rows ── */
@@ -2967,7 +2973,7 @@ function CatBlock({
         )}
         <div className="cat-head-right">
           <button className="add-col-btn head-add" onClick={() => setShowAddModal(true)} title="Add item">
-            + Add<span className="head-add-word"> item</span>
+            +<span className="head-add-word"> Add item</span>
           </button>
           {checkedCount > 0 && (
             <button className="cat-clear-btn" onClick={onClearChecked} title="Remove all checked items">
@@ -3462,7 +3468,7 @@ function TaskCol({ color, title, sub, tasks, bucketId, showDate, onAdd, onToggle
         <div className="task-col-title" onClick={onToggleCollapse} style={{ cursor: 'pointer' }}>{title}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <button className="add-col-btn head-add" onClick={() => setShowAddModal(true)} title="Add task">
-            + Add<span className="head-add-word"> task</span>
+            +<span className="head-add-word"> Add task</span>
           </button>
           <div className="task-col-sub">{tasks.filter(t => !t.done).length} · {sub}</div>
           <button className="collapse-btn" onClick={onToggleCollapse} title={collapsed ? 'Expand' : 'Collapse'}>

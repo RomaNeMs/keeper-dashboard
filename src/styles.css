@@ -301,7 +301,13 @@ body {
 /* In-header add button (shopping categories, task columns) */
 .add-col-btn.head-add { padding: 4px 10px; font-size: 11.5px; border-radius: 8px; flex-shrink: 0; }
 @media (max-width: 680px) {
+  /* Phone headers: icon-only "+" and tighter spacing so the name keeps room */
   .head-add-word { display: none; }
+  .add-col-btn.head-add { width: 30px; height: 26px; padding: 0; justify-content: center; font-size: 16px; }
+  .cat-head { gap: 6px; }
+  .cat-head-right { gap: 5px; }
+  .cat-head .collapse-btn { width: 20px; }
+  .cat-del-btn { width: 20px; }
 }
 
 /* ── Shopping / Task item rows ── */

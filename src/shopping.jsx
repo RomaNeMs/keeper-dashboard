@@ -287,7 +287,7 @@ function CatBlock({
         )}
         <div className="cat-head-right">
           <button className="add-col-btn head-add" onClick={() => setShowAddModal(true)} title="Add item">
-            + Add<span className="head-add-word"> item</span>
+            +<span className="head-add-word"> Add item</span>
           </button>
           {checkedCount > 0 && (
             <button className="cat-clear-btn" onClick={onClearChecked} title="Remove all checked items">
