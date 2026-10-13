@@ -29,6 +29,7 @@ function Shopping() {
   const [editingName, setEditingName] = React.useState(null);
   const [editingCat, setEditingCat] = React.useState(null);
   const [showNewCat, setShowNewCat] = React.useState(false);
+  const [confirmDelId, setConfirmDelId] = React.useState(null); // category awaiting delete confirmation
 
   const items = state.shopping.items;
   const cats  = state.shopping.cats;
@@ -223,11 +224,33 @@ function Shopping() {
               onClearChecked={() => clearChecked(cat.id)}
               collapsed={!!shopCollapsed[cat.id]}
               onToggleCollapse={() => toggleCatCollapse(cat.id)}
-              onDelete={() => deleteCategory(cat.id)}
+              onDelete={() => setConfirmDelId(cat.id)}
             />
           );
         })}
       </div>
+
+      {confirmDelId && (() => {
+        const cat = cats.find(c => c.id === confirmDelId);
+        if (!cat) return null;
+        const n = items.filter(i => i.cat === cat.id).length;
+        return (
+          <div className="modal-overlay" onClick={() => setConfirmDelId(null)}>
+            <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+              <h3 dir={isRTL(cat.name) ? 'rtl' : 'ltr'}>Delete “{cat.name}”?</h3>
+              <p style={{ margin: '0 0 16px', fontSize: 14, color: 'var(--muted)', lineHeight: 1.5 }}>
+                {n > 0
+                  ? `This removes the category and its ${n} item${n > 1 ? 's' : ''}.`
+                  : 'This category is empty.'}
+              </p>
+              <div className="modal-actions">
+                <button className="btn ghost" autoFocus onClick={() => setConfirmDelId(null)}>Cancel</button>
+                <button className="btn danger" onClick={() => { deleteCategory(cat.id); setConfirmDelId(null); }}>Delete</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {showNewCat && (
         <NewCategoryModal

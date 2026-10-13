@@ -221,6 +221,8 @@ body {
 .btn.dark:hover { background: var(--grad-accent-hover); }
 .btn.ghost   { background: transparent; border-color: transparent; box-shadow: none; color: var(--accent); }
 .btn.ghost:hover { background: var(--accent-light); }
+.btn.danger  { background: var(--grad-red); color: #fff; border-color: transparent; box-shadow: var(--bevel-red); }
+.btn.danger:hover { background: var(--grad-red-hover); }
 .btn.tiny    { padding: 4px 9px; font-size: 12px; border-radius: 8px; }
 
 /* One focus ring for everything interactive */
