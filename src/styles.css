@@ -255,11 +255,18 @@ body {
   background: var(--paper); border: 1px solid var(--line);
   border-radius: var(--radius-lg); padding: 14px 14px 10px; box-shadow: var(--shadow-card);
 }
-.cat-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 10px; }
+.cat-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 10px; flex-wrap: nowrap; }
 .cat-name {
   font-size: 15px; font-weight: 700; cursor: pointer; user-select: none;
-  display: inline-flex; align-items: center; gap: 6px;
+  display: flex; align-items: center; gap: 6px; min-width: 0; flex: 0 1 auto;
 }
+/* Long names truncate so the header controls never wrap */
+.cat-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.cat-del-btn {
+  width: 22px; height: 22px; border: none; background: transparent; border-radius: 6px;
+  color: var(--muted-2); cursor: pointer; flex-shrink: 0; display: grid; place-items: center;
+}
+.cat-del-btn:hover { background: var(--red-light); color: var(--red); }
 .cat-drag-handle { opacity: 0; transition: opacity 100ms; }
 .cat-block:hover .cat-drag-handle { opacity: 1; }
 @media (max-width: 680px) {

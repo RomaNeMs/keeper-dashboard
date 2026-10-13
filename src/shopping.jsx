@@ -136,6 +136,25 @@ function Shopping() {
     }));
     setShowNewCat(false);
   }
+  function deleteCategory(catId) {
+    const cat = state.shopping.cats.find(c => c.id === catId);
+    if (!cat) return;
+    const prevCats = state.shopping.cats;
+    const prevItems = state.shopping.items;
+    const n = prevItems.filter(i => i.cat === catId).length;
+    setState(s => ({
+      ...s,
+      shopping: {
+        ...s.shopping,
+        cats: s.shopping.cats.filter(c => c.id !== catId),
+        items: s.shopping.items.filter(i => i.cat !== catId),
+      }
+    }));
+    if (undo) {
+      undo(`"${cat.name}" deleted${n ? ` · ${n} item${n > 1 ? 's' : ''}` : ''}`,
+        () => setState(s => ({ ...s, shopping: { ...s.shopping, cats: prevCats, items: prevItems } })));
+    }
+  }
   function reorderCatItems(catId, nextCatItems) {
     setState(s => ({
       ...s,
@@ -198,6 +217,7 @@ function Shopping() {
               onClearChecked={() => clearChecked(cat.id)}
               collapsed={!!shopCollapsed[cat.id]}
               onToggleCollapse={() => toggleCatCollapse(cat.id)}
+              onDelete={() => deleteCategory(cat.id)}
             />
           );
         })}
@@ -218,7 +238,7 @@ function CatBlock({
   editingCat, onStartEditCat, onCommitCatName, onCancelEditCat,
   onReorder, editingQty, editingName, onToggle, onRemove, onStartEditName, onCommitName,
   onCancelEditName, onStartEditQty, onCommitQty, onOpenSearch, onAddItem, onClearChecked,
-  collapsed, onToggleCollapse,
+  collapsed, onToggleCollapse, onDelete,
 }) {
   const checkedCount = catItems.length - open;
   const { getHandleProps, dragState } = useReorder(catItems, onReorder);
@@ -259,7 +279,7 @@ function CatBlock({
           />
         ) : (
           <div className="cat-name" dir={isRTL(cat.name) ? 'rtl' : 'ltr'} onClick={onStartEditCat} title="Tap to rename">
-            {cat.name}
+            <span className="cat-name-text">{cat.name}</span>
             <svg className="cat-name-pencil" width="11" height="11" viewBox="0 0 12 12" fill="none">
               <path d="M8.5 1.5l2 2-6.5 6.5-2.3.3.3-2.3 6.5-6.5z" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" />
             </svg>
@@ -277,6 +297,11 @@ function CatBlock({
           <div className="cat-count" onClick={onToggleCollapse} style={{ cursor: 'pointer' }}>{open}/{catItems.length}</div>
           <button className="collapse-btn" onClick={onToggleCollapse} title={collapsed ? 'Expand' : 'Collapse'}>
             {collapsed ? '▼' : '▲'}
+          </button>
+          <button className="cat-del-btn" onClick={onDelete} title="Delete category">
+            <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+              <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
           </button>
         </div>
       </div>
