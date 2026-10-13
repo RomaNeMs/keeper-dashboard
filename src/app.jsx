@@ -181,21 +181,12 @@ function MobileTabBar({ active, onNav }) {
   );
 }
 
-// Finance PIN persistence is DESKTOP-ONLY: on the Mac, reopening the app
-// within a week skips the PIN (that convenience was explicitly asked for).
-// Phones are shared/glanceable, so any touch device asks for the PIN on
-// every visit — and wipes any stamp left over from before this rule.
-// Switching away from the Finance tab mid-session re-locks it immediately
-// on all platforms (see onNav below), unchanged from before.
-const FIN_UNLOCK_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-const FIN_PERSIST = typeof navigator !== 'undefined' && (navigator.maxTouchPoints || 0) === 0;
-
+// The Finance PIN is never remembered, on any device: every visit to the tab
+// asks for it, and leaving the tab re-locks it (see onNav below). Any unlock
+// stamp an older build stored is wiped on load.
 function loadFinanceUnlocked() {
-  try {
-    if (!FIN_PERSIST) { localStorage.removeItem(FIN_LOCK_KEY); return false; }
-    const ts = parseInt(localStorage.getItem(FIN_LOCK_KEY), 10);
-    return ts > 0 && (Date.now() - ts) < FIN_UNLOCK_TTL_MS;
-  } catch { return false; }
+  try { localStorage.removeItem(FIN_LOCK_KEY); } catch {}
+  return false;
 }
 
 function App() {
@@ -224,10 +215,7 @@ function App() {
     trips: <Trips />,
     finance: financeUnlocked
       ? <Finance />
-      : <FinanceLock onUnlock={() => {
-          try { if (FIN_PERSIST) localStorage.setItem(FIN_LOCK_KEY, String(Date.now())); } catch {}
-          setFinanceUnlocked(true);
-        }} />,
+      : <FinanceLock onUnlock={() => setFinanceUnlocked(true)} />,
   };
 
   return (

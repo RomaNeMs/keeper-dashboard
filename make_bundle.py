@@ -16,7 +16,7 @@ Usage:
     git add -A && git commit -m "…" && git push
 """
 
-import os
+import os, hashlib
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(HERE, 'src')
@@ -99,6 +99,31 @@ GATE_HTML = """
 // On a fresh unlock we reload so the store re-evaluates with the URL present.
 const __GATE_VAULT = VAULT_PLACEHOLDER;
 const __GATE_LS = 'studio.exec.url';
+
+// ── Auto-update ────────────────────────────────────────────────────────────
+// A home-screen app on iOS can keep running an old copy of this page long
+// after a deploy. On load and whenever the app returns to the foreground,
+// fetch the live page uncached; if its build id differs from ours, reload
+// via a unique URL (bypasses every cache). One attempt per build id per
+// session, so a stale CDN can never cause a reload loop.
+const __BUILD = 'BUILD_PLACEHOLDER';
+(function () {
+  if (window.top !== window.self) return;
+  async function check() {
+    try {
+      const r = await fetch(location.pathname + '?bc=' + Date.now(), { cache: 'no-store' });
+      if (!r.ok) return;
+      const m = (await r.text()).match(/const __BUILD = '([0-9a-f]+)'/);
+      if (!m || m[1] === __BUILD) return;
+      const k = 'keeper.updateTried';
+      if (sessionStorage.getItem(k) === m[1]) return;
+      sessionStorage.setItem(k, m[1]);
+      location.replace(location.pathname + '?b=' + m[1]);
+    } catch (_) {}
+  }
+  setTimeout(check, 2500);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) check(); });
+})();
 
 (function () {
   // Old bookmarks to the retired script.google.com URL land here via a
@@ -200,7 +225,10 @@ def main():
             jsx_blocks.append(f'<!-- {fname} -->\n<script type="text/babel">\n{content}\n</script>')
             print(f'  + {fname}')
 
-    gate = GATE_HTML.replace('VAULT_PLACEHOLDER', VAULT)
+    # Build id = content hash, so identical sources keep rebuilding byte-for-byte
+    build_id = hashlib.sha1((css + ''.join(jsx_blocks) + GATE_HTML + GATE_CSS + VAULT).encode('utf-8')).hexdigest()[:10]
+    gate = GATE_HTML.replace('VAULT_PLACEHOLDER', VAULT).replace('BUILD_PLACEHOLDER', build_id)
+    print(f'  build {build_id}')
 
     html = f"""<!doctype html>
 <html lang="en">

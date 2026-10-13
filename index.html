@@ -1239,6 +1239,31 @@ body {
 const __GATE_VAULT = { salt: "ncCgQeuDF2XwoB7bdDtcKw==", iv: "03CALX46wkiW2q/p", data: "afGXqgoaiBr+rMVbOWzRThEzpmZrsGJ6bbTP7/JRYDT3wBiDlR6eiuy8rQ6uUItfHTi6JStHFsRpEYsxsuMf+R+bBSkIUpoU/uKOYKiiGnQ9mZkwPd+pAOPCk3X4OkX+GF51U60BB5QyarZuXG8NfRXhWKQkfkB9BXlenaZwqGCPkUUJitDiUXH4PFOJ6nIXXnvIESRPJi7DYLztw3Jf/SVClk0p2Ep8O4kjRHlKjvDIASaN5A==" };
 const __GATE_LS = 'studio.exec.url';
 
+// ── Auto-update ────────────────────────────────────────────────────────────
+// A home-screen app on iOS can keep running an old copy of this page long
+// after a deploy. On load and whenever the app returns to the foreground,
+// fetch the live page uncached; if its build id differs from ours, reload
+// via a unique URL (bypasses every cache). One attempt per build id per
+// session, so a stale CDN can never cause a reload loop.
+const __BUILD = 'cb77d5a97d';
+(function () {
+  if (window.top !== window.self) return;
+  async function check() {
+    try {
+      const r = await fetch(location.pathname + '?bc=' + Date.now(), { cache: 'no-store' });
+      if (!r.ok) return;
+      const m = (await r.text()).match(/const __BUILD = '([0-9a-f]+)'/);
+      if (!m || m[1] === __BUILD) return;
+      const k = 'keeper.updateTried';
+      if (sessionStorage.getItem(k) === m[1]) return;
+      sessionStorage.setItem(k, m[1]);
+      location.replace(location.pathname + '?b=' + m[1]);
+    } catch (_) {}
+  }
+  setTimeout(check, 2500);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) check(); });
+})();
+
 (function () {
   // Old bookmarks to the retired script.google.com URL land here via a
   // redirect that Google runs INSIDE its own wrapper iframe — leaving the
@@ -5553,21 +5578,12 @@ function MobileTabBar({ active, onNav }) {
   );
 }
 
-// Finance PIN persistence is DESKTOP-ONLY: on the Mac, reopening the app
-// within a week skips the PIN (that convenience was explicitly asked for).
-// Phones are shared/glanceable, so any touch device asks for the PIN on
-// every visit — and wipes any stamp left over from before this rule.
-// Switching away from the Finance tab mid-session re-locks it immediately
-// on all platforms (see onNav below), unchanged from before.
-const FIN_UNLOCK_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-const FIN_PERSIST = typeof navigator !== 'undefined' && (navigator.maxTouchPoints || 0) === 0;
-
+// The Finance PIN is never remembered, on any device: every visit to the tab
+// asks for it, and leaving the tab re-locks it (see onNav below). Any unlock
+// stamp an older build stored is wiped on load.
 function loadFinanceUnlocked() {
-  try {
-    if (!FIN_PERSIST) { localStorage.removeItem(FIN_LOCK_KEY); return false; }
-    const ts = parseInt(localStorage.getItem(FIN_LOCK_KEY), 10);
-    return ts > 0 && (Date.now() - ts) < FIN_UNLOCK_TTL_MS;
-  } catch { return false; }
+  try { localStorage.removeItem(FIN_LOCK_KEY); } catch {}
+  return false;
 }
 
 function App() {
@@ -5596,10 +5612,7 @@ function App() {
     trips: <Trips />,
     finance: financeUnlocked
       ? <Finance />
-      : <FinanceLock onUnlock={() => {
-          try { if (FIN_PERSIST) localStorage.setItem(FIN_LOCK_KEY, String(Date.now())); } catch {}
-          setFinanceUnlocked(true);
-        }} />,
+      : <FinanceLock onUnlock={() => setFinanceUnlocked(true)} />,
   };
 
   return (
