@@ -236,6 +236,7 @@ function TaskCol({ color, title, sub, tasks, bucketId, showDate, onAdd, onToggle
   return (
     <div
       className={`task-col ${collapsed ? 'collapsed' : ''}`}
+      onClick={(e) => { if (isBubbleToggleTap(e)) onToggleCollapse(); }}
       style={{ background: CAT_COLOR_BG[color], outline: hover ? '2px dashed rgba(0,0,0,0.3)' : 'none' }}
       onDragOver={(e) => { e.preventDefault(); setHover(true); }}
       onDragLeave={() => setHover(false)}
@@ -246,7 +247,7 @@ function TaskCol({ color, title, sub, tasks, bucketId, showDate, onAdd, onToggle
       }}
     >
       <div className="task-col-head">
-        <div className="task-col-title" onClick={onToggleCollapse} style={{ cursor: 'pointer' }}>{title}</div>
+        <div className="task-col-title">{title}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <button className="add-col-btn head-add" onClick={() => setShowAddModal(true)} title="Add task">
             +<span className="head-add-word"> Add task</span>

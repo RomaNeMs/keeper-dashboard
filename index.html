@@ -273,7 +273,18 @@ body {
   background: var(--paper); border: 1px solid var(--line);
   border-radius: var(--radius-lg); padding: 14px 14px 10px; box-shadow: var(--shadow-card);
 }
-.cat-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 10px; flex-wrap: nowrap; }
+.cat-head-wrap { position: relative; overflow: hidden; border-radius: 8px; margin-bottom: 10px; }
+.cat-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: nowrap;
+  position: relative; transition: transform 160ms cubic-bezier(.2,.8,.3,1);
+}
+/* Swipe-revealed Delete (phones only — desktop uses the ✕) */
+.cat-head-del {
+  display: none; position: absolute; top: 0; right: 0; bottom: 0; width: 84px;
+  border: none; border-radius: 8px; cursor: pointer;
+  background: var(--grad-red); color: #fff; font: inherit; font-size: 13px; font-weight: 700;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.22);
+}
 .cat-name {
   font-size: 15px; font-weight: 700; cursor: pointer; user-select: none;
   display: flex; align-items: center; gap: 6px; min-width: 0; flex: 0 1 auto;
@@ -292,8 +303,17 @@ body {
   .cat-clear-word { display: none; }
   .cat-clear-btn { padding: 3px 8px; }
 }
-.cat-name-pencil { color: var(--muted-2); opacity: 0; transition: opacity 100ms; flex-shrink: 0; }
-.cat-name:hover .cat-name-pencil { opacity: 1; }
+/* Tapping the name now collapses the bubble; renaming moves to this pencil */
+.cat-rename-btn {
+  width: 22px; height: 22px; border: none; background: transparent; border-radius: 6px;
+  display: grid; place-items: center; cursor: pointer; flex-shrink: 0; padding: 0;
+}
+.cat-rename-btn:hover { background: rgba(255,255,255,0.55); }
+.cat-name-pencil { color: var(--muted); opacity: 0.55; transition: opacity 100ms; }
+.cat-rename-btn:hover .cat-name-pencil { opacity: 1; }
+/* Whole bubble is tappable to collapse/expand */
+.cat-block, .task-col { cursor: pointer; }
+.cat-block .item-row, .task-col .item-row { cursor: default; }
 .cat-name-input {
   font: inherit; font-size: 15px; font-weight: 700; border: 1px solid var(--accent);
   border-radius: 6px; padding: 2px 8px; outline: none; background: var(--paper); color: var(--ink);
@@ -325,7 +345,10 @@ body {
   .cat-head { gap: 6px; }
   .cat-head-right { gap: 5px; }
   .cat-head .collapse-btn { width: 20px; }
-  .cat-del-btn { width: 20px; }
+  /* Phones: delete via swipe-left on the header instead of the ✕ */
+  .cat-del-btn { display: none; }
+  .cat-head-del { display: block; }
+  .cat-head { touch-action: pan-y; }
 }
 
 /* ── Shopping / Task item rows ── */
@@ -485,7 +508,7 @@ body {
 }
 .collapse-btn:hover { background: var(--bg); }
 .cat-block.collapsed { padding-bottom: 12px; }
-.cat-block.collapsed .cat-head { margin-bottom: 0; }
+.cat-block.collapsed .cat-head-wrap { margin-bottom: 0; }
 .task-col.collapsed { min-height: 0; }
 .task-col.collapsed .task-col-head { margin-bottom: 0; padding-bottom: 14px; }
 
@@ -2697,6 +2720,12 @@ const CAT_COLOR_BG = {
 // Reinsert a reordered category subsequence back into the flat items array,
 // preserving the position of every item NOT in this category. `nextCatItems`
 // is the already-reordered list scoped to one category (from useReorder).
+// Bubbles (shopping categories, task columns) collapse/expand on a tap anywhere
+// that isn't an interactive control, a list row, or the open add modal.
+function isBubbleToggleTap(e) {
+  return !e.target.closest('button, input, textarea, select, a, .item-row, .reorder-handle, .modal-overlay');
+}
+
 function reorderWithinCat(allItems, catId, nextCatItems) {
   let cursor = 0;
   return allItems.map(it => it.cat === catId ? nextCatItems[cursor++] : it);
@@ -2947,9 +2976,57 @@ function CatBlock({
     setShowAddModal(false);
   }
 
+  // Phone: swipe the header left to reveal Delete (the ✕ is desktop-only)
+  const [headX, setHeadX] = React.useState(0);
+  const headSwipe = React.useRef(null);
+  function onHeadTouchStart(e) {
+    if (editingCat || e.target.closest('[data-reorder-handle]')) return;
+    const t = e.touches[0];
+    headSwipe.current = { startX: t.clientX, startY: t.clientY, openAt: headX, locked: null };
+  }
+  function onHeadTouchMove(e) {
+    const st = headSwipe.current;
+    if (!st) return;
+    const t = e.touches[0];
+    const dx = t.clientX - st.startX, dy = t.clientY - st.startY;
+    if (st.locked === null) {
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      st.locked = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+    }
+    if (st.locked !== 'x') return;
+    setHeadX(Math.min(0, Math.max(HEAD_SWIPE_OPEN, st.openAt + dx)));
+  }
+  function onHeadTouchEnd() {
+    const st = headSwipe.current;
+    headSwipe.current = null;
+    if (!st || st.locked !== 'x') return;
+    setHeadX(x => (x <= SWIPE_THRESHOLD ? HEAD_SWIPE_OPEN : 0));
+  }
+
   return (
-    <div className={blockCls} data-reorder-id={cat.id} style={{ background: CAT_COLOR_BG[cat.color] }}>
-      <div className="cat-head">
+    <div
+      className={blockCls}
+      data-reorder-id={cat.id}
+      style={{ background: CAT_COLOR_BG[cat.color] }}
+      onClick={(e) => { if (isBubbleToggleTap(e)) onToggleCollapse(); }}
+    >
+      <div
+        className="cat-head-wrap"
+        onClickCapture={(e) => {
+          // While open, a tap anywhere on the header just closes it
+          if (headX !== 0 && !e.target.closest('.cat-head-del')) {
+            e.stopPropagation(); e.preventDefault(); setHeadX(0);
+          }
+        }}
+      >
+      <button className="cat-head-del" onClick={() => { setHeadX(0); onDelete(); }}>Delete</button>
+      <div
+        className="cat-head"
+        style={{ transform: `translateX(${headX}px)`, background: CAT_COLOR_BG[cat.color] }}
+        onTouchStart={onHeadTouchStart}
+        onTouchMove={onHeadTouchMove}
+        onTouchEnd={onHeadTouchEnd}
+      >
         <span className="reorder-handle cat-drag-handle" {...catHandleProps} title="Drag to reorder category">⠿</span>
         {editingCat ? (
           <input
@@ -2964,11 +3041,13 @@ function CatBlock({
             }}
           />
         ) : (
-          <div className="cat-name" dir={isRTL(cat.name) ? 'rtl' : 'ltr'} onClick={onStartEditCat} title="Tap to rename">
+          <div className="cat-name" dir={isRTL(cat.name) ? 'rtl' : 'ltr'}>
             <span className="cat-name-text">{cat.name}</span>
-            <svg className="cat-name-pencil" width="11" height="11" viewBox="0 0 12 12" fill="none">
-              <path d="M8.5 1.5l2 2-6.5 6.5-2.3.3.3-2.3 6.5-6.5z" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" />
-            </svg>
+            <button className="cat-rename-btn" onClick={onStartEditCat} title="Rename category">
+              <svg className="cat-name-pencil" width="11" height="11" viewBox="0 0 12 12" fill="none">
+                <path d="M8.5 1.5l2 2-6.5 6.5-2.3.3.3-2.3 6.5-6.5z" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" />
+              </svg>
+            </button>
           </div>
         )}
         <div className="cat-head-right">
@@ -2980,7 +3059,7 @@ function CatBlock({
               Clear<span className="cat-clear-word"> checked</span> · {checkedCount}
             </button>
           )}
-          <div className="cat-count" onClick={onToggleCollapse} style={{ cursor: 'pointer' }}>{open}/{catItems.length}</div>
+          <div className="cat-count">{open}/{catItems.length}</div>
           <button className="collapse-btn" onClick={onToggleCollapse} title={collapsed ? 'Expand' : 'Collapse'}>
             {collapsed ? '▼' : '▲'}
           </button>
@@ -2990,6 +3069,7 @@ function CatBlock({
             </svg>
           </button>
         </div>
+      </div>
       </div>
 
       {!collapsed && catItems.map(it => {
@@ -3045,6 +3125,7 @@ function CatBlock({
 // Desktop: edit/delete buttons are always visible, no hover-reveal.
 const SWIPE_OPEN_X = -156; // 3 buttons × 52px: search + edit + delete
 const SWIPE_THRESHOLD = -36;
+const HEAD_SWIPE_OPEN = -84; // width of the category header's Delete button
 
 function ShopItemRow({
   item, isDragging, isOver, overBelow, handleProps,
@@ -3455,6 +3536,7 @@ function TaskCol({ color, title, sub, tasks, bucketId, showDate, onAdd, onToggle
   return (
     <div
       className={`task-col ${collapsed ? 'collapsed' : ''}`}
+      onClick={(e) => { if (isBubbleToggleTap(e)) onToggleCollapse(); }}
       style={{ background: CAT_COLOR_BG[color], outline: hover ? '2px dashed rgba(0,0,0,0.3)' : 'none' }}
       onDragOver={(e) => { e.preventDefault(); setHover(true); }}
       onDragLeave={() => setHover(false)}
@@ -3465,7 +3547,7 @@ function TaskCol({ color, title, sub, tasks, bucketId, showDate, onAdd, onToggle
       }}
     >
       <div className="task-col-head">
-        <div className="task-col-title" onClick={onToggleCollapse} style={{ cursor: 'pointer' }}>{title}</div>
+        <div className="task-col-title">{title}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <button className="add-col-btn head-add" onClick={() => setShowAddModal(true)} title="Add task">
             +<span className="head-add-word"> Add task</span>

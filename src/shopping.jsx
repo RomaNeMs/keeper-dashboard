@@ -11,6 +11,12 @@ const CAT_COLOR_BG = {
 // Reinsert a reordered category subsequence back into the flat items array,
 // preserving the position of every item NOT in this category. `nextCatItems`
 // is the already-reordered list scoped to one category (from useReorder).
+// Bubbles (shopping categories, task columns) collapse/expand on a tap anywhere
+// that isn't an interactive control, a list row, or the open add modal.
+function isBubbleToggleTap(e) {
+  return !e.target.closest('button, input, textarea, select, a, .item-row, .reorder-handle, .modal-overlay');
+}
+
 function reorderWithinCat(allItems, catId, nextCatItems) {
   let cursor = 0;
   return allItems.map(it => it.cat === catId ? nextCatItems[cursor++] : it);
@@ -261,9 +267,57 @@ function CatBlock({
     setShowAddModal(false);
   }
 
+  // Phone: swipe the header left to reveal Delete (the ✕ is desktop-only)
+  const [headX, setHeadX] = React.useState(0);
+  const headSwipe = React.useRef(null);
+  function onHeadTouchStart(e) {
+    if (editingCat || e.target.closest('[data-reorder-handle]')) return;
+    const t = e.touches[0];
+    headSwipe.current = { startX: t.clientX, startY: t.clientY, openAt: headX, locked: null };
+  }
+  function onHeadTouchMove(e) {
+    const st = headSwipe.current;
+    if (!st) return;
+    const t = e.touches[0];
+    const dx = t.clientX - st.startX, dy = t.clientY - st.startY;
+    if (st.locked === null) {
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      st.locked = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+    }
+    if (st.locked !== 'x') return;
+    setHeadX(Math.min(0, Math.max(HEAD_SWIPE_OPEN, st.openAt + dx)));
+  }
+  function onHeadTouchEnd() {
+    const st = headSwipe.current;
+    headSwipe.current = null;
+    if (!st || st.locked !== 'x') return;
+    setHeadX(x => (x <= SWIPE_THRESHOLD ? HEAD_SWIPE_OPEN : 0));
+  }
+
   return (
-    <div className={blockCls} data-reorder-id={cat.id} style={{ background: CAT_COLOR_BG[cat.color] }}>
-      <div className="cat-head">
+    <div
+      className={blockCls}
+      data-reorder-id={cat.id}
+      style={{ background: CAT_COLOR_BG[cat.color] }}
+      onClick={(e) => { if (isBubbleToggleTap(e)) onToggleCollapse(); }}
+    >
+      <div
+        className="cat-head-wrap"
+        onClickCapture={(e) => {
+          // While open, a tap anywhere on the header just closes it
+          if (headX !== 0 && !e.target.closest('.cat-head-del')) {
+            e.stopPropagation(); e.preventDefault(); setHeadX(0);
+          }
+        }}
+      >
+      <button className="cat-head-del" onClick={() => { setHeadX(0); onDelete(); }}>Delete</button>
+      <div
+        className="cat-head"
+        style={{ transform: `translateX(${headX}px)`, background: CAT_COLOR_BG[cat.color] }}
+        onTouchStart={onHeadTouchStart}
+        onTouchMove={onHeadTouchMove}
+        onTouchEnd={onHeadTouchEnd}
+      >
         <span className="reorder-handle cat-drag-handle" {...catHandleProps} title="Drag to reorder category">⠿</span>
         {editingCat ? (
           <input
@@ -278,11 +332,13 @@ function CatBlock({
             }}
           />
         ) : (
-          <div className="cat-name" dir={isRTL(cat.name) ? 'rtl' : 'ltr'} onClick={onStartEditCat} title="Tap to rename">
+          <div className="cat-name" dir={isRTL(cat.name) ? 'rtl' : 'ltr'}>
             <span className="cat-name-text">{cat.name}</span>
-            <svg className="cat-name-pencil" width="11" height="11" viewBox="0 0 12 12" fill="none">
-              <path d="M8.5 1.5l2 2-6.5 6.5-2.3.3.3-2.3 6.5-6.5z" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" />
-            </svg>
+            <button className="cat-rename-btn" onClick={onStartEditCat} title="Rename category">
+              <svg className="cat-name-pencil" width="11" height="11" viewBox="0 0 12 12" fill="none">
+                <path d="M8.5 1.5l2 2-6.5 6.5-2.3.3.3-2.3 6.5-6.5z" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" />
+              </svg>
+            </button>
           </div>
         )}
         <div className="cat-head-right">
@@ -294,7 +350,7 @@ function CatBlock({
               Clear<span className="cat-clear-word"> checked</span> · {checkedCount}
             </button>
           )}
-          <div className="cat-count" onClick={onToggleCollapse} style={{ cursor: 'pointer' }}>{open}/{catItems.length}</div>
+          <div className="cat-count">{open}/{catItems.length}</div>
           <button className="collapse-btn" onClick={onToggleCollapse} title={collapsed ? 'Expand' : 'Collapse'}>
             {collapsed ? '▼' : '▲'}
           </button>
@@ -304,6 +360,7 @@ function CatBlock({
             </svg>
           </button>
         </div>
+      </div>
       </div>
 
       {!collapsed && catItems.map(it => {
@@ -359,6 +416,7 @@ function CatBlock({
 // Desktop: edit/delete buttons are always visible, no hover-reveal.
 const SWIPE_OPEN_X = -156; // 3 buttons × 52px: search + edit + delete
 const SWIPE_THRESHOLD = -36;
+const HEAD_SWIPE_OPEN = -84; // width of the category header's Delete button
 
 function ShopItemRow({
   item, isDragging, isOver, overBelow, handleProps,
